@@ -5,7 +5,6 @@ import json
 
 # Load
 data_dir = os.path.abspath('Data')
-
 # Check for existence
 if not os.path.exists(data_dir):
     Exception('No data found')
@@ -14,7 +13,6 @@ if not os.path.exists(data_dir):
 input_num_units = 36
 hidden_num_units = 32
 output_num_units = 7
-
 hidden_layer_count = 3
 
 # Seed for random selection
@@ -45,26 +43,57 @@ biases = {
 
 
 def load_data():
+    temp_data = []
+    train_data = []
+    val_data = []
+
     for folder, subs, files in os.walk(data_dir):
         for file in files:
             if file.endswith(".json"):
                 json_file = os.path.join(folder, file)
                 with open(json_file) as json_data:
                     data = json.load(json_data)
-                    print(data.get("pose"))
+                    temp_data.append(interp_json(data))
+
+    split_point = np.int(len(temp_data)*0.7)
+    train_data, val_data = temp_data[:split_point], temp_data[split_point:]
+
+    return train_data, val_data
+
+def interp_json(data):
+    """ Convert JSON dictionary into easily accesable data """
+    data_x = []
+    data_y = []
+    labels = []
+
+    for idx,val in enumerate(data.get("pose")):
+        data_y.append(val) if idx % 2 else data_x.append(val)
+
+    label = data.get("label")
+    if label == "angry":
+        labels.append([1,0,0,0,0,0,0])
+    elif label == "boredom":
+        labels.append([0,1,0,0,0,0,0])
+    elif label == "disgust":
+        labels.append([0,0,1,0,0,0,0])
+    elif label == "Fear":
+        labels.append([0,0,0,1,0,0,0])
+    elif label == "neutral":
+        labels.append([0,0,0,0,1,0,0])
+    elif label == "sadness":
+        labels.append([0,0,0,0,0,1,0])
+    elif label == "surprise":
+        labels.append([0,0,0,0,0,0,1])
+
+    return [data_x] + [data_y] + labels
 
 load_data()
 
 
-def create_batch(batch_size, dataset_length, dataset_name):
+def create_batch(batch_size, dataset_length):
     """Create batch with random samples and return appropriate format"""
     batch_mask = random.choice(dataset_length, batch_size)
 
-    batch_x = eval(
-        dataset_name + '_x')[[batch_mask]].reshape(-1, input_num_units)
-
-    if dataset_name == 'train':
-        batch_y = eval(dataset_name).ix[batch_mask, 'label'].values
 
     return batch_x, batch_y
 
