@@ -61,35 +61,49 @@ def load_data():
                         test_data['test_x'].append(data['data_x'])
                         test_data['test_y'].append(data['data_y'])
 
+    split_point = np.int(len(temp_data['data_x']) * 0.7)
+    train_x, val_x = temp_data['data_x'][
+        :split_point], temp_data['data_x'][
+        split_point:]
+    train_y, val_y = temp_data['data_y'][
+        :split_point], temp_data['data_y'][
+        split_point:]
 
-    split_point = np.int(len(temp_data['data_x'])*0.7)
-    train_x, val_x = temp_data['data_x'][:split_point], temp_data['data_x'][split_point:]
-    train_y, val_y = temp_data['data_y'][:split_point], temp_data['data_y'][split_point:]
+    return {'train_x': train_x, 'train_y': train_y}, {
+        'val_x': val_x, 'val_y': val_y}, test_data
 
-    return {'train_x': train_x, 'train_y': train_y}, {'val_x': val_x, 'val_y': val_y}, test_data
 
 def prep_json(data):
     """ Prepare JSON data from files """
 
     label = data.get("label")
     if label == "angry":
-        label = [1,0,0,0,0,0,0]
+        label = [1, 0, 0, 0, 0, 0, 0]
     elif label == "boredom":
-        label = [0,1,0,0,0,0,0]
+        label = [0, 1, 0, 0, 0, 0, 0]
     elif label == "disgust":
-        label = [0,0,1,0,0,0,0]
+        label = [0, 0, 1, 0, 0, 0, 0]
     elif label == "fear":
-        label = [0,0,0,1,0,0,0]
+        label = [0, 0, 0, 1, 0, 0, 0]
     elif label == "neutral":
-        label = [0,0,0,0,1,0,0]
+        label = [0, 0, 0, 0, 1, 0, 0]
     elif label == "sadness":
-        label = [0,0,0,0,0,1,0]
+        label = [0, 0, 0, 0, 0, 1, 0]
     elif label == "surprise":
-        label = [0,0,0,0,0,0,1]
+        label = [0, 0, 0, 0, 0, 0, 1]
 
     return {'data_x': data.get("pose"), 'data_y': label}
 
+
 def create_batch(dataset_length, dataset):
+    data = json.load(json_data)
+    data.get("pose")
+
+
+load_data()
+
+
+def create_batch(batch_size, dataset_length, dataset_name):
     """Create batch with random samples and return appropriate format"""
 
     batch_mask = random.choice(dataset_length, batch_size)
@@ -119,7 +133,7 @@ init = tf.global_variables_initializer()
 
 # Create session and run the graph
 with tf.Session() as sess:
-    #Create initialized variables
+    # Create initialized variables
     sess.run(init)
 
     # For each epoch, do:
