@@ -6,6 +6,11 @@ import time
 import train_base as base
 
 import tensorflow as tf
+from tensorflow.python.saved_model import builder as saved_model_builder
+from tensorflow.python.saved_model import signature_constants
+from tensorflow.python.saved_model import signature_def_utils
+from tensorflow.python.saved_model import tag_constants
+from tensorflow.python.saved_model import utils
 
 input_size = 36
 output_size = 7
@@ -91,9 +96,9 @@ def do_eval(sess, eval_correct, data_placeholder,
 
 
 def run_training():
-    """Train MNIST for a number of steps."""
+    """Train AI for a number of steps."""
     # Get the sets of images and labels for training, validation, and
-    # test on MNIST.
+    # test on AI.
     data_sets = base.read_data_sets(FLAGS.input_data_dir)
 
     # Tell TensorFlow that the model will be built into the default Graph.
@@ -153,8 +158,7 @@ def run_training():
             # inspect the values of your Ops or variables, you may include them
             # in the list passed to sess.run() and the value tensors will be
             # returned in the tuple from the call.
-            _, loss_value = sess.run([train_op, loss],
-                                     feed_dict=feed_dict)
+            _, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
 
             duration = time.time() - start_time
 
@@ -195,6 +199,52 @@ def run_training():
                         labels_placeholder,
                         data_sets.test)
 
+    export_path = os.path.join(FLAGS.log_dir, "saved_model/")
+    builder = saved_model_builder.SavedModelBuilder(export_path)
+
+    # Build the signature_def_map.
+    # Signature specifies what type of model is being exported,
+    # and the input/output tensors to bind to when running inference.
+    # think of them as annotiations on the graph for serving
+    # we can use them a number of ways
+    # grabbing whatever inputs/outputs/models we want either on server
+    # or via client
+    classification_inputs = utils.build_tensor_info(serialized_tf_example)
+    classification_outputs_classes = utils.build_tensor_info(
+        prediction_classes)
+    classification_outputs_scores = utils.build_tensor_info(values)
+
+    classification_signature = signature_def_utils.build_signature_def(
+        inputs={signature_constants.CLASSIFY_INPUTS: classification_inputs},
+        outputs={
+            signature_constants.CLASSIFY_OUTPUT_CLASSES:
+            classification_outputs_classes,
+            signature_constants.CLASSIFY_OUTPUT_SCORES:
+            classification_outputs_scores
+        },
+        method_name=signature_constants.CLASSIFY_METHOD_NAME)
+
+    tensor_info_x = utils.build_tensor_info(x)
+    tensor_info_y = utils.build_tensor_info(y)
+
+    prediction_signature = signature_def_utils.build_signature_def(
+        inputs={'images': tensor_info_x},
+        outputs={'scores': tensor_info_y},
+        method_name=signature_constants.PREDICT_METHOD_NAME)
+
+    legacy_init_op = tf.group(tf.tables_initializer(), name='legacy_init_op')
+
+    builder.add_meta_graph_and_variables(
+        sess, [tag_constants.SERVING],
+        signature_def_map={
+            'predict_images':
+            prediction_signature,
+            signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY:
+            classification_signature,
+        },
+        legacy_init_op=legacy_init_op)
+    builder.save()
+
 
 def main(_):
     if tf.gfile.Exists(FLAGS.log_dir):
@@ -214,7 +264,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--max_steps',
         type=int,
-        default=2000,
+        default=100,
+        # default=sys.maxsize,
         help='Number of steps to run trainer.'
     )
     parser.add_argument(

@@ -280,4 +280,8 @@ def prep_json(data):
     elif label == "surprise":
         label = [0, 0, 0, 0, 0, 0, 1]
 
+    if len(data.get("pose")) != 36:
+        print(data.get("pose"))
+        exit()
+
     return np.asarray(data.get("pose")), np.asarray(label)
