@@ -24,7 +24,7 @@ def placeholder_inputs(batch_size):
     batch_size: The batch size will be baked into both placeholders.
 
     Returns:
-    images_placeholder: Images placeholder.
+    data_placeholder: Data placeholder.
     labels_placeholder: Labels placeholder.
     """
     # Note that the shapes of the placeholders match the shapes of the full
@@ -91,59 +91,54 @@ def do_eval(sess, eval_correct, data_placeholder,
 
 
 def run_training():
-    """Train MNIST for a number of steps."""
-    # Get the sets of images and labels for training, validation, and
-    # test on MNIST.
+    """Train Data for a number of steps"""
+    # Get the sets of images and labels for training, validation, and tests
     data_sets = base.read_data_sets(FLAGS.input_data_dir)
 
-    # Tell TensorFlow that the model will be built into the default Graph.
-    with tf.Graph().as_default():
-        # Generate placeholders for the images and labels.
-        data_placeholder, labels_placeholder = placeholder_inputs(
-            FLAGS.batch_size)
+    # Generate placeholders for the images and labels.
+    data_placeholder, labels_placeholder = placeholder_inputs(
+        FLAGS.batch_size)
 
-        # Build a Graph that computes predictions from the inference model.
-        logits = base.inference(data_placeholder,
-                                input_size,
-                                FLAGS.hidden1,
-                                FLAGS.hidden2,
-                                output_size)
+    # Build a Graph that computes predictions from the inference model
+    logits = base.inference(data_placeholder,
+                            input_size,
+                            FLAGS.hidden1,
+                            FLAGS.hidden2,
+                            output_size)
 
-        # Add to the Graph the Ops for loss calculation.
-        loss = base.loss(logits, labels_placeholder)
+    # Add to the Graph the Ops for loss calculation
+    loss = base.loss(logits, labels_placeholder)
 
-        # Add to the Graph the Ops that calculate and apply gradients.
-        train_op = base.training(loss, FLAGS.learning_rate)
+    # Add to the Graph the Ops that calculate and apply gradients
+    train_op = base.training(loss, FLAGS.learning_rate)
 
-        # Add the Op to compare the logits to the labels during evaluation.
-        eval_correct = base.evaluation(logits, labels_placeholder)
+    # Add the Op to compare the logits to the labels during evaluation
+    eval_correct = base.evaluation(logits, labels_placeholder)
 
-        # Build the summary Tensor based on the TF collection of Summaries.
-        summary = tf.summary.merge_all()
+    # Build the summary Tensor based on the TF collection of Summaries
+    summary = tf.summary.merge_all()
 
-        # Add the variable initializer Op.
-        init = tf.global_variables_initializer()
+    # Add the variable initializer Op
+    init = tf.global_variables_initializer()
 
-        # Create a saver for writing training checkpoints.
-        saver = tf.train.Saver()
+    # Create a saver for writing training checkpoints
+    saver = tf.train.Saver()
 
-        # Create a session for running Ops on the Graph.
-        sess = tf.Session()
-
-        # Instantiate a SummaryWriter to output summaries and the Graph.
+    # Tell TensorFlow that the model will be built into the default Graph
+    with tf.Session() as sess:
+        # Instantiate a SummaryWriter to output summaries and the Graph
         summary_writer = tf.summary.FileWriter(FLAGS.log_dir, sess.graph)
 
-        # And then after everything is built:
-
-        # Run the Op to initialize the variables.
+        # Run the Op to initialize the variables
         sess.run(init)
 
         # Start the training loop.
-        for step in range(FLAGS.max_steps):
+        step = 0
+        while True:
             start_time = time.time()
 
             # Fill a feed dictionary with the actual set of images and labels
-            # for this particular training step.
+            # for this particular training step
             feed_dict = fill_feed_dict(data_sets.train,
                                        data_placeholder,
                                        labels_placeholder)
@@ -152,15 +147,15 @@ def run_training():
             # from the `train_op` (which is discarded) and the `loss` Op.  To
             # inspect the values of your Ops or variables, you may include them
             # in the list passed to sess.run() and the value tensors will be
-            # returned in the tuple from the call.
+            # returned in the tuple from the call
             _, loss_value = sess.run([train_op, loss],
                                      feed_dict=feed_dict)
 
             duration = time.time() - start_time
 
-            # Write the summaries and print an overview fairly often.
+            # Write the summaries and print an overview fairly often
             if step % 100 == 0:
-                # Print status to stdout.
+                # Print status to stdout
                 print(
                     'Step %d: loss = %.2f (%.3f sec)' %
                     (step, loss_value, duration))
@@ -194,9 +189,11 @@ def run_training():
                         data_placeholder,
                         labels_placeholder,
                         data_sets.test)
+            step += 1
 
 
 def main(_):
+    # Make sure the directory is empty so it can be used to save the data
     if tf.gfile.Exists(FLAGS.log_dir):
         tf.gfile.DeleteRecursively(FLAGS.log_dir)
     tf.gfile.MakeDirs(FLAGS.log_dir)
@@ -214,7 +211,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--max_steps',
         type=int,
-        default=2000,
+        default=sys.maxsize,
         help='Number of steps to run trainer.'
     )
     parser.add_argument(
