@@ -158,7 +158,7 @@ def loss(logits, labels):
         loss: Loss tensor of type float.
     """
     labels = tf.to_int64(labels)
-    cross_entropy = tf.nn.softmax_cross_entropy_with_logits(
+    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
         labels=labels, logits=logits, name='xentropy')
     return tf.reduce_mean(cross_entropy, name='xentropy_mean')
 
@@ -208,16 +208,14 @@ def evaluation(logits, labels):
     # It returns a bool tensor with shape [batch_size] that is true for
     # the examples where the label is in the top k (here k=1)
     # of all logits for that example.
-    correct = tf.equal(tf.argmax(logits, 1), tf.argmax(labels, 1))
+    correct = tf.nn.in_top_k(logits, labels, 1)
     # Return the number of true entries.
     return tf.reduce_sum(tf.cast(correct, tf.int32))
 
 
-def stack_array(a1, a2=None):
+def to_numpy(data, labels):
     """ Small helper function to convert list of arrays to a 2D array """
-    if a2 is not None:
-        return np.vstack(a1), np.vstack(a2)
-    return np.vstack(a1)
+    return np.vstack(data), np.array(labels)
 
 
 def read_data_sets(input_dir, dtype=dtypes.float32, reshape=True, seed=None):
@@ -248,9 +246,9 @@ def read_data_sets(input_dir, dtype=dtypes.float32, reshape=True, seed=None):
     train_labels, val_labels = temp_labels[:split], temp_labels[split:]
 
     # Convert to numpy arrays
-    train_data, train_labels = stack_array(train_data, train_labels)
-    val_data, val_labels = stack_array(val_data, val_labels)
-    test_data, test_labels = stack_array(test_data, test_labels)
+    train_data, train_labels = to_numpy(train_data, train_labels)
+    val_data, val_labels = to_numpy(val_data, val_labels)
+    test_data, test_labels = to_numpy(test_data, test_labels)
 
     options = dict(dtype=dtype, reshape=reshape, seed=seed)
 
@@ -266,18 +264,18 @@ def prep_json(data):
     label = data.get("label")
 
     if label == "angry":
-        label = [1, 0, 0, 0, 0, 0, 0]
+        label = 0
     elif label == "boredom":
-        label = [0, 1, 0, 0, 0, 0, 0]
+        label = 1
     elif label == "disgust":
-        label = [0, 0, 1, 0, 0, 0, 0]
+        label = 2
     elif label == "fear":
-        label = [0, 0, 0, 1, 0, 0, 0]
+        label = 3
     elif label == "neutral":
-        label = [0, 0, 0, 0, 1, 0, 0]
+        label = 4
     elif label == "sadness":
-        label = [0, 0, 0, 0, 0, 1, 0]
+        label = 5
     elif label == "surprise":
-        label = [0, 0, 0, 0, 0, 0, 1]
+        label = 6
 
-    return np.asarray(data.get("pose")), np.asarray(label)
+    return np.asarray(data.get("pose")), label
