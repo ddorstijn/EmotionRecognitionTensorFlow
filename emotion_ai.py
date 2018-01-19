@@ -78,7 +78,9 @@ def do_eval(sess, eval_correct, data_placeholder,
     # And run one epoch of eval.
     true_count = 0  # Counts the number of correct predictions.
     steps_per_epoch = data_set.num_examples // FLAGS.batch_size
+    print(steps_per_epoch)
     num_examples = steps_per_epoch * FLAGS.batch_size
+    print(FLAGS.batch_size)
     for step in range(steps_per_epoch):
         feed_dict = fill_feed_dict(data_set,
                                    data_placeholder,
@@ -222,7 +224,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--batch_size',
         type=int,
-        default=10,
+        default=12,
         help='Batch size.  Must divide evenly into the dataset sizes.'
     )
     parser.add_argument(

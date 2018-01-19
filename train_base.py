@@ -34,13 +34,6 @@ class DataSet(object):
             'data.shape: %s labels.shape: %s' %
             (data.shape, labels.shape))
         self._num_examples = data.shape[0]
-
-        # Convert shape from [num examples, rows, columns, depth]
-        # to [num examples, rows*columns] (assuming depth == 1)
-        # if reshape:
-        #     assert data.shape[3] == 1
-        #     data = data.reshape(data.shape[0],
-        #                         data.shape[1] * data.shape[2])
         if dtype == dtypes.float32:
             # Convert from [0, 255] -> [0.0, 1.0].
             data = data.astype(np.float32)
