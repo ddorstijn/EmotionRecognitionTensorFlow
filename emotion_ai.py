@@ -6,6 +6,7 @@ import time
 import train_base as base
 
 import tensorflow as tf
+from tensorflow.python.saved_model.signature_constants import DEFAULT_SERVING_SIGNATURE_DEF_KEY as DEFAULT_SIG_DEF
 
 input_size = 36
 output_size = 7
@@ -31,8 +32,9 @@ def placeholder_inputs(batch_size):
     # image and label tensors, except the first dimension is now batch_size
     # rather than the full size of the train or test data sets.
     data_placeholder = tf.placeholder(
-        tf.float32, shape=(batch_size, input_size))
-    labels_placeholder = tf.placeholder(tf.int32, shape=(batch_size))
+        tf.float32, shape=(batch_size, input_size), name="input")
+    labels_placeholder = tf.placeholder(
+        tf.int32, shape=(batch_size), name="output_size")
     return data_placeholder, labels_placeholder
 
 
@@ -78,9 +80,7 @@ def do_eval(sess, eval_correct, data_placeholder,
     # And run one epoch of eval.
     true_count = 0  # Counts the number of correct predictions.
     steps_per_epoch = data_set.num_examples // FLAGS.batch_size
-    print(steps_per_epoch)
     num_examples = steps_per_epoch * FLAGS.batch_size
-    print(FLAGS.batch_size)
     for step in range(steps_per_epoch):
         feed_dict = fill_feed_dict(data_set,
                                    data_placeholder,
@@ -125,6 +125,8 @@ def run_training():
     # Create a saver for writing training checkpoints
     saver = tf.train.Saver()
 
+    builder = tf.saved_model.builder.SavedModelBuilder(FLAGS.export_dir)
+
     # Tell TensorFlow that the model will be built into the default Graph
     with tf.Session() as sess:
         # Instantiate a SummaryWriter to output summaries and the Graph
@@ -135,7 +137,7 @@ def run_training():
 
         # Start the training loop.
         step = 0
-        while True:
+        while step < 2000:
             start_time = time.time()
 
             # Fill a feed dictionary with the actual set of images and labels
@@ -166,7 +168,7 @@ def run_training():
                 summary_writer.flush()
 
             # Save a checkpoint and evaluate the model periodically.
-            if (step + 1) % 1000 == 0:
+            if (step + 1) % 1000 == 0 or loss_value == 0.0:
                 checkpoint_file = os.path.join(FLAGS.log_dir, 'model.ckpt')
                 saver.save(sess, checkpoint_file, global_step=step)
                 # Evaluate against the training set.
@@ -190,7 +192,23 @@ def run_training():
                         data_placeholder,
                         labels_placeholder,
                         data_sets.test)
+            if loss_value == 0.0:
+                break
+
             step += 1
+
+        output = sess.graph.get_tensor_by_name('output')
+        input_tensor = sess.graph.get_tensor_by_name('input')
+        sig_def = tf.saved_model.signature_def_utils.predict_signature_def(
+            {'input': input_tensor},
+            {'output': output}
+        )
+        builder.add_meta_graph_and_variables(
+            sess, tf.saved_model.tag_constants.SERVING,
+            signature_def_map={
+                DEFAULT_SIG_DEF: sig_def
+            }
+        )
 
 
 def main(_):
@@ -237,6 +255,12 @@ if __name__ == '__main__':
         '--log_dir',
         type=str,
         default=os.path.abspath('logs'),
+        help='Directory to put the log data.'
+    )
+    parser.add_argument(
+        '--export_dir',
+        type=str,
+        default=os.path.abspath('export'),
         help='Directory to put the log data.'
     )
 
