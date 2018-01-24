@@ -6,7 +6,6 @@ import time
 import train_base as base
 
 import tensorflow as tf
-from tensorflow.python.saved_model import builder as saved_model_builder
 from tensorflow.python.saved_model import signature_constants
 from tensorflow.python.saved_model import signature_def_utils
 from tensorflow.python.saved_model import tag_constants
@@ -196,53 +195,6 @@ def run_training():
                         labels_placeholder,
                         data_sets.test)
             step += 1
-
-    export_path = os.path.join(FLAGS.log_dir, "saved_model/")
-    builder = saved_model_builder.SavedModelBuilder(export_path)
-
-    # Build the signature_def_map.
-    # Signature specifies what type of model is being exported,
-    # and the input/output tensors to bind to when running inference.
-    # think of them as annotiations on the graph for serving
-    # we can use them a number of ways
-    # grabbing whatever inputs/outputs/models we want either on server
-    # or via client
-    classification_inputs = utils.build_tensor_info(serialized_tf_example)
-    classification_outputs_classes = utils.build_tensor_info(
-        prediction_classes)
-    classification_outputs_scores = utils.build_tensor_info(values)
-
-    classification_signature = signature_def_utils.build_signature_def(
-        inputs={signature_constants.CLASSIFY_INPUTS: classification_inputs},
-        outputs={
-            signature_constants.CLASSIFY_OUTPUT_CLASSES:
-            classification_outputs_classes,
-            signature_constants.CLASSIFY_OUTPUT_SCORES:
-            classification_outputs_scores
-        },
-        method_name=signature_constants.CLASSIFY_METHOD_NAME)
-
-    tensor_info_x = utils.build_tensor_info(x)
-    tensor_info_y = utils.build_tensor_info(y)
-
-    prediction_signature = signature_def_utils.build_signature_def(
-        inputs={'images': tensor_info_x},
-        outputs={'scores': tensor_info_y},
-        method_name=signature_constants.PREDICT_METHOD_NAME)
-
-    legacy_init_op = tf.group(tf.tables_initializer(), name='legacy_init_op')
-
-    builder.add_meta_graph_and_variables(
-        sess, [tag_constants.SERVING],
-        signature_def_map={
-            'predict_images':
-            prediction_signature,
-            signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY:
-            classification_signature,
-        },
-        legacy_init_op=legacy_init_op)
-    builder.save()
-
 
 def main(_):
     # Make sure the directory is empty so it can be used to save the data
