@@ -128,7 +128,12 @@ def run_training():
     init = tf.global_variables_initializer()
 
     # Create a saver for writing training checkpoints
-    saver = tf.train.Saver()
+    try:
+        saver = tf.train.import_meta_graph('results/models.ckpt.meta')
+    except:
+        print("Saved files not found, creating new")
+        saver = tf.train.Saver()
+    # saver = tf.train.Saver()
 
     # Tell TensorFlow that the model will be built into the default Graph
     with tf.Session() as sess:
