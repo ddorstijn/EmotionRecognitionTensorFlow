@@ -146,60 +146,67 @@ def run_training():
         # Start the training loop.
         step = 0
         while True:
-            start_time = time.time()
+            try: 
+                start_time = time.time()
 
-            # Fill a feed dictionary with the actual set of images and labels
-            # for this particular training step
-            feed_dict = fill_feed_dict(data_sets.train,
-                                       data_placeholder,
-                                       labels_placeholder)
+                # Fill a feed dictionary with the actual set of images and labels
+                # for this particular training step
+                feed_dict = fill_feed_dict(data_sets.train,
+                                        data_placeholder,
+                                        labels_placeholder)
 
-            # Run one step of the model.  The return values are the activations
-            # from the `train_op` (which is discarded) and the `loss` Op.  To
-            # inspect the values of your Ops or variables, you may include them
-            # in the list passed to sess.run() and the value tensors will be
-            # returned in the tuple from the call.
-            _, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
+                # Run one step of the model.  The return values are the activations
+                # from the `train_op` (which is discarded) and the `loss` Op.  To
+                # inspect the values of your Ops or variables, you may include them
+                # in the list passed to sess.run() and the value tensors will be
+                # returned in the tuple from the call.
+                _, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
 
-            duration = time.time() - start_time
+                duration = time.time() - start_time
 
-            # Write the summaries and print an overview fairly often
-            if step % 100 == 0:
-                # Print status to stdout
-                print(
-                    'Step %d: loss = %.2f (%.3f sec)' %
-                    (step, loss_value, duration))
-                # Update the events file.
-                summary_str = sess.run(summary, feed_dict=feed_dict)
-                summary_writer.add_summary(summary_str, step)
-                summary_writer.flush()
+                # Write the summaries and print an overview fairly often
+                if step % 100 == 0:
+                    # Print status to stdout
+                    print(
+                        'Step %d: loss = %.2f (%.3f sec)' %
+                        (step, loss_value, duration))
+                    # Update the events file.
+                    summary_str = sess.run(summary, feed_dict=feed_dict)
+                    summary_writer.add_summary(summary_str, step)
+                    summary_writer.flush()
 
-            # Save a checkpoint and evaluate the model periodically.
-            if (step + 1) % 1000 == 0:
+                # Save a checkpoint and evaluate the model periodically.
+                if (step + 1) % 1000 == 0:
+                    checkpoint_file = os.path.join(FLAGS.log_dir, 'model.ckpt')
+                    saver.save(sess, checkpoint_file, global_step=step)
+                    # Evaluate against the training set.
+                    print('Training Data Eval:')
+                    do_eval(sess,
+                            eval_correct,
+                            data_placeholder,
+                            labels_placeholder,
+                            data_sets.train)
+                    # Evaluate against the validation set.
+                    print('Validation Data Eval:')
+                    do_eval(sess,
+                            eval_correct,
+                            data_placeholder,
+                            labels_placeholder,
+                            data_sets.validation)
+                    # Evaluate against the test set.
+                    print('Test Data Eval:')
+                    do_eval(sess,
+                            eval_correct,
+                            data_placeholder,
+                            labels_placeholder,
+                            data_sets.test)
+                step += 1
+            except (KeyboardInterrupt, SystemExit):
                 checkpoint_file = os.path.join(FLAGS.log_dir, 'model.ckpt')
-                saver.save(sess, checkpoint_file, global_step=step)
-                # Evaluate against the training set.
-                print('Training Data Eval:')
-                do_eval(sess,
-                        eval_correct,
-                        data_placeholder,
-                        labels_placeholder,
-                        data_sets.train)
-                # Evaluate against the validation set.
-                print('Validation Data Eval:')
-                do_eval(sess,
-                        eval_correct,
-                        data_placeholder,
-                        labels_placeholder,
-                        data_sets.validation)
-                # Evaluate against the test set.
-                print('Test Data Eval:')
-                do_eval(sess,
-                        eval_correct,
-                        data_placeholder,
-                        labels_placeholder,
-                        data_sets.test)
-            step += 1
+                print("saving data to " + checkpoint_file)
+                saver.save(sess, checkpoint_file)
+                sys.exit()
+
 
 def main(_):
     # Make sure the directory is empty so it can be used to save the data
