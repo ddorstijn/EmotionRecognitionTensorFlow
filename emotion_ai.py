@@ -37,8 +37,7 @@ def placeholder_inputs(batch_size):
     # rather than the full size of the train or test data sets.
     data_placeholder = tf.placeholder(
         tf.float32, shape=(batch_size, input_size))
-    labels_placeholder = tf.placeholder(
-        tf.int32, shape=(batch_size, output_size))
+    labels_placeholder = tf.placeholder(tf.int32, shape=(batch_size))
     return data_placeholder, labels_placeholder
 
 
@@ -84,7 +83,9 @@ def do_eval(sess, eval_correct, data_placeholder,
     # And run one epoch of eval.
     true_count = 0  # Counts the number of correct predictions.
     steps_per_epoch = data_set.num_examples // FLAGS.batch_size
+    print(steps_per_epoch)
     num_examples = steps_per_epoch * FLAGS.batch_size
+    print(FLAGS.batch_size)
     for step in range(steps_per_epoch):
         feed_dict = fill_feed_dict(data_set,
                                    data_placeholder,
@@ -170,7 +171,7 @@ def run_training():
                 summary_writer.flush()
 
             # Save a checkpoint and evaluate the model periodically.
-            if (step + 1) % 1000 == 0 or (step + 1) == FLAGS.max_steps:
+            if (step + 1) % 1000 == 0:
                 checkpoint_file = os.path.join(FLAGS.log_dir, 'model.ckpt')
                 saver.save(sess, checkpoint_file, global_step=step)
                 # Evaluate against the training set.
@@ -260,12 +261,6 @@ if __name__ == '__main__':
         help='Initial learning rate.'
     )
     parser.add_argument(
-        '--max_steps',
-        type=int,
-        default=sys.maxsize,
-        help='Number of steps to run trainer.'
-    )
-    parser.add_argument(
         '--hidden1',
         type=int,
         default=128,
@@ -280,7 +275,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--batch_size',
         type=int,
-        default=20,
+        default=12,
         help='Batch size.  Must divide evenly into the dataset sizes.'
     )
     parser.add_argument(
