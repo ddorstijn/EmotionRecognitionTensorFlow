@@ -91,7 +91,7 @@ def do_eval(sess, eval_correct, data_placeholder,
 
 
 def run_training():
-    """Train MNIST for a number of steps."""
+    """Train data for a number of steps."""
     # Get the sets of images and labels for training, validation, and
     # test on MNIST.
     data_sets = base.read_data_sets(FLAGS.input_data_dir)
@@ -214,7 +214,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--max_steps',
         type=int,
-        default=2000,
+        default=sys.maxsize,
         help='Number of steps to run trainer.'
     )
     parser.add_argument(
