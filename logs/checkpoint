@@ -1,3 +1,2 @@
-model_checkpoint_path: "F:\\Python\\EmotionBodyLanguage\\logs\\model.ckpt-1999"
-all_model_checkpoint_paths: "F:\\Python\\EmotionBodyLanguage\\logs\\model.ckpt-999"
-all_model_checkpoint_paths: "F:\\Python\\EmotionBodyLanguage\\logs\\model.ckpt-1999"
+model_checkpoint_path: "F:\\INC\\INC_AI\\INC_AI\\EmotionBodyLanguage\\logs\\model.ckpt-99"
+all_model_checkpoint_paths: "F:\\INC\\INC_AI\\INC_AI\\EmotionBodyLanguage\\logs\\model.ckpt-99"
