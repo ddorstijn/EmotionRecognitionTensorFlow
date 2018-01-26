@@ -126,20 +126,24 @@ def run_training():
 
     # Add the variable initializer Op
     init = tf.global_variables_initializer()
-
     # Create a saver for writing training checkpoints
-    try:
-        saver = tf.train.import_meta_graph('results/models.ckpt.meta')
-    except:
-        print("Saved files not found, creating new")
-        saver = tf.train.Saver()
-    # saver = tf.train.Saver()
+    # try:
+        # saver = tf.train.import_meta_graph(os.path.join(FLAGS.save_dir, 'model.ckpt.meta'))
+        
+    # except:
+    #    print(os.path.join(FLAGS.save_dir, 'model.ckpt.meta'))
+    #    print("Saved files not found, creating new")
+    #    saver = tf.train.Saver()
+    saver = tf.train.Saver()
 
     # Tell TensorFlow that the model will be built into the default Graph
     with tf.Session() as sess:
         # Instantiate a SummaryWriter to output summaries and the Graph
         summary_writer = tf.summary.FileWriter(FLAGS.log_dir, sess.graph)
-
+        
+        saver.restore(sess,tf.train.latest_checkpoint(FLAGS.save_dir))
+        # saver.restore(sess, os.path.join(FLAGS.save_dir, 'model.ckpt.index'))
+        
         # Run the Op to initialize the variables
         sess.run(init)
 
@@ -202,9 +206,13 @@ def run_training():
                             data_sets.test)
                 step += 1
             except (KeyboardInterrupt, SystemExit):
-                checkpoint_file = os.path.join(FLAGS.log_dir, 'model.ckpt')
+                if tf.gfile.Exists(FLAGS.save_dir):
+                    tf.gfile.DeleteRecursively(FLAGS.save_dir)
+                tf.gfile.MakeDirs(FLAGS.save_dir)
+                checkpoint_file = os.path.join(FLAGS.save_dir, 'model.ckpt')
                 print("saving data to " + checkpoint_file)
                 saver.save(sess, checkpoint_file)
+                # saver.export_meta_graph(checkpoint_file)
                 sys.exit()
 
 
@@ -253,6 +261,12 @@ if __name__ == '__main__':
         type=str,
         default=os.path.abspath('logs'),
         help='Directory to put the log data.'
+    )
+    parser.add_argument(
+        '--save_dir',
+        type=str,
+        default=os.path.abspath('save'),
+        help='Directiony to put the save data.'
     )
 
     FLAGS, unparsed = parser.parse_known_args()
