@@ -6,38 +6,17 @@ import time
 import train_base as base
 
 import tensorflow as tf
+import shared
 from tensorflow.python.saved_model import signature_constants
 from tensorflow.python.saved_model import signature_def_utils
 from tensorflow.python.saved_model import tag_constants
 from tensorflow.python.saved_model import utils
 
-input_size = 36
 output_size = 7
 
 # Basic model parameters as external flags.
 FLAGS = None
 
-
-def placeholder_inputs(batch_size):
-    """Generate placeholder variables to represent the input tensors.
-
-    These placeholders are used as inputs by the rest of the model building
-    code and will be fed from the downloaded data in the .run() loop, below.
-
-    Args:
-    batch_size: The batch size will be baked into both placeholders.
-
-    Returns:
-    data_placeholder: Data placeholder.
-    labels_placeholder: Labels placeholder.
-    """
-    # Note that the shapes of the placeholders match the shapes of the full
-    # image and label tensors, except the first dimension is now batch_size
-    # rather than the full size of the train or test data sets.
-    data_placeholder = tf.placeholder(
-        tf.float32, shape=(batch_size, input_size))
-    labels_placeholder = tf.placeholder(tf.int32, shape=(batch_size))
-    return data_placeholder, labels_placeholder
 
 
 def fill_feed_dict(data_set, data_pl, labels_pl):
@@ -102,12 +81,12 @@ def run_training():
     data_sets = base.read_data_sets(FLAGS.input_data_dir)
 
     # Generate placeholders for the images and labels.
-    data_placeholder, labels_placeholder = placeholder_inputs(
+    data_placeholder, labels_placeholder = shared.placeholder_inputs(
         FLAGS.batch_size)
 
     # Build a Graph that computes predictions from the inference model
     logits = base.inference(data_placeholder,
-                            input_size,
+                            shared.input_size,
                             FLAGS.hidden1,
                             FLAGS.hidden2,
                             output_size)
@@ -126,27 +105,28 @@ def run_training():
 
     # Add the variable initializer Op
     init = tf.global_variables_initializer()
-    # Create a saver for writing training checkpoints
-    # try:
-        # saver = tf.train.import_meta_graph(os.path.join(FLAGS.save_dir, 'model.ckpt.meta'))
-        
-    # except:
-    #    print(os.path.join(FLAGS.save_dir, 'model.ckpt.meta'))
-    #    print("Saved files not found, creating new")
-    #    saver = tf.train.Saver()
-    saver = tf.train.Saver()
+    # saver = tf.train.Saver()
+    graph = tf.get_default_graph();
 
     # Tell TensorFlow that the model will be built into the default Graph
     with tf.Session() as sess:
         # Instantiate a SummaryWriter to output summaries and the Graph
-        summary_writer = tf.summary.FileWriter(FLAGS.log_dir, sess.graph)
+        # Create a saver for writing training checkpoints
+        try:
+            saver = tf.train.import_meta_graph(os.path.join(FLAGS.save_dir, 'model.ckpt.meta'))
+            saver.restore(sess,tf.train.latest_checkpoint(FLAGS.save_dir))
+        except:
+            print(os.path.join(FLAGS.save_dir, 'model.ckpt.meta'))
+            print("Saved files not found, creating new")
+            saver = tf.train.Saver()
         
-        saver.restore(sess,tf.train.latest_checkpoint(FLAGS.save_dir))
+        global_step_tensor = graph.get_tensor_by_name('global_step:0')
         # saver.restore(sess, os.path.join(FLAGS.save_dir, 'model.ckpt.index'))
-        
+        sess.run(global_step_tensor)
         # Run the Op to initialize the variables
         sess.run(init)
 
+        summary_writer = tf.summary.FileWriter(FLAGS.log_dir, sess.graph)
         # Start the training loop.
         step = 0
         while True:

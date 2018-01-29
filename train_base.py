@@ -99,7 +99,7 @@ class DataSet(object):
 
 
 def inference(data, input_size, hidden1_units, hidden2_units, output_size):
-    """Build the MNIST model up to where it may be used for inference.
+    """Build the data model up to where it may be used for inference.
 
     Args:
       data: data placeholder, from inputs().
