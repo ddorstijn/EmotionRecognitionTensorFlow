@@ -2,6 +2,7 @@
 import tensorflow as tf
 input_size = 36
 
+
 def placeholder_inputs(batch_size):
     """Generate placeholder variables to represent the input tensors.
 
