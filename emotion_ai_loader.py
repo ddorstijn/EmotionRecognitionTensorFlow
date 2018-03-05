@@ -44,9 +44,6 @@ def inference(data, input_size, hidden1_units, hidden2_units, output_size):
     weights = graph.get_tensor_by_name('softmax_linear/weights:0')
     biases = graph.get_tensor_by_name('softmax_linear/biases:0')
     logits = tf.matmul(hidden2, weights) + biases
-    print(graph.get_tensor_by_name("softmax_linear/weights:0"))
-    print("and: ")
-    print(graph.get_operation_by_name("softmax_linear/weights"))
 
     return logits
 
@@ -64,6 +61,7 @@ def main(_):
         data_set = read_data_sets()
         data_set = data_set.astype(np.float32)
         data_set = np.multiply(data_set, 1.0 / 255.0)
+
         feed_dict = {data_placeholder: data_set}
 
         prediction = tf.argmax(logits, 1)
@@ -75,7 +73,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--input',
         type=str,
-        default=os.path.abspath('test/Angry1.jpg.json'),
+        default=os.path.abspath('test/Fear.jpg.json'),
         help='Directory to put the input data.'
     )
 
